@@ -4,9 +4,11 @@ set -e
 
 mkdir -p "$1/bin/"
 cp -n "bin/nginx-$STACK" "$1/bin/nginx"
+chmod +x "$1/bin/nginx"
 nginx_version=$($1/bin/nginx -V 2>&1 | head -1 | awk '{ print $NF }')
 echo "-----> nginx-buildpack: Installed ${nginx_version} to app/bin"
 cp -n bin/start-nginx "$1/bin/"
+chmod +x "$1/bin/start-nginx"
 echo '-----> nginx-buildpack: Added start-nginx to app/bin'
 
 mkdir -p "$1/config"
