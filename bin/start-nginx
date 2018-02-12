@@ -61,6 +61,18 @@ fi
 	echo 'nginx' >$psmgr
 ) &
 
+#Start honeytail if available
+if [ -x "bin/honeytail" ]; then
+(
+	echo 'buildpack=nginx at=honeytail-start'
+	erb config/honeytail.conf.erb > config/honeytail.conf
+	honeytail -c config/honeytail.conf
+	echo 'honeytail' >$psmgr
+) &
+else
+    echo 'buildpack=nginx at=honeytail-unavailable'
+fi
+
 #This read will block the process waiting on a msg to be put into the fifo.
 #If any of the processes defined above should exit,
 #a msg will be put into the fifo causing the read operation
