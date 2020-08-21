@@ -8,14 +8,24 @@ Some application servers (e.g. Ruby's Unicorn) halt progress when dealing with n
 
 ## Versions
 
-* Buildpack Version: 1.1
+### Cedar-14 (deprecated)
 * NGINX Version: 1.9.5
+### Heroku 16
+* NGINX Version: 1.9.5
+### Heroku 18
+* NGINX Version: 1.18.0
+### Heroku 20
+* NGINX Version: 1.18.0
 
-## Requirements
+## Requirements (Proxy Mode)
 
 * Your webserver listens to the socket at `/tmp/nginx.socket`.
 * You touch `/tmp/app-initialized` when you are ready for traffic.
 * You can start your web server with a shell command.
+
+## Requirements (Solo Mode)
+
+* Add a custom nginx config to your app source code at `config/nginx.conf.erb`. You can start by copying the [sample config for nginx solo mode](config/nginx-solo-sample.conf.erb).
 
 ## Features
 
@@ -40,10 +50,18 @@ You can correlate this id with your Heroku router logs:
 ```
 at=info method=GET path=/ host=salty-earth-7125.herokuapp.com request_id=e2c79e86b3260b9c703756ec93f8a66d fwd="67.180.77.184" dyno=web.1 connect=1ms service=8ms status=200 bytes=21
 ```
+#### Setting custom log paths
+
+You can configure custom log paths using the environment variables `NGINX_ACCESS_LOG_PATH` and `NGINX_ERROR_LOG_PATH`.
+
+For example, if you wanted to stop nginx from logging your access logs you could set `NGINX_ACCESS_LOG_PATH` to `/dev/null`:
+```bash
+$ heroku config:set NGINX_ACCESS_LOG_PATH="/dev/null"
+```
 
 ### Language/App Server Agnostic
 
-Nginx-buildpack provides a command named `bin/start-nginx` this command takes another command as an argument. You must pass your app server's startup command to `start-nginx`.
+nginx-buildpack provides a command named `bin/start-nginx` this command takes another command as an argument. You must pass your app server's startup command to `start-nginx`.
 
 For example, to get NGINX and Unicorn up and running:
 
@@ -52,7 +70,24 @@ $ cat Procfile
 web: bin/start-nginx bundle exec unicorn -c config/unicorn.rb
 ```
 
-### Setting the Worker Processes
+#### nginx debug mode
+```bash
+$ cat Procfile
+web: bin/start-nginx-debug bundle exec unicorn -c config/unicorn.rb
+```
+
+### nginx Solo Mode
+
+nginx-buildpack provides a command named `bin/start-nginx-solo`. This is for you if you don't want to run an additional app server on the Dyno.
+This mode requires you to put a `config/nginx.conf.erb` in your app code. You can start by coping the [sample config for nginx solo mode](config/nginx-solo-sample.conf.erb).
+For example, to get NGINX and Unicorn up and running:
+
+```bash
+$ cat Procfile
+web: bin/start-nginx-solo
+```
+
+### Setting the Worker Processes and Connections
 
 You can configure NGINX's `worker_processes` directive via the
 `NGINX_WORKERS` environment variable.
@@ -61,6 +96,12 @@ For example, to set your `NGINX_WORKERS` to 8 on a PX dyno:
 
 ```bash
 $ heroku config:set NGINX_WORKERS=8
+```
+
+Similarly, the `NGINX_WORKER_CONNECTIONS` environment variable can configure the `worker_connections` directive:
+
+```bash
+$ heroku config:set NGINX_WORKER_CONNECTIONS=2048
 ```
 
 ### Customizable NGINX Config
@@ -95,10 +136,12 @@ Here are 2 setup examples. One example for a new app, another for an existing ap
 
 ### Existing App
 
-Update Buildpacks
+Update Buildpacks to use the latest stable version of this buildpack:
 ```bash
-$ heroku buildpacks:add https://github.com/heroku/heroku-buildpack-nginx
+$ heroku buildpacks:add heroku-community/nginx
 ```
+Alternatively, you can use the Github URL of this repo if you want to edge version.
+
 Update Procfile:
 ```
 web: bin/start-nginx bundle exec unicorn -c config/unicorn.rb
